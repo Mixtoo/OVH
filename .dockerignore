@@ -8,14 +8,17 @@ dist/
 build/
 .vite/
 
-# 缓存
+# 缓存（排除内容，保留目录）
 backend/cache/*
 !backend/cache/.gitkeep
 
-# 日志
+# 日志（排除内容，保留目录）
 backend/logs/*
 !backend/logs/.gitkeep
 *.log
+
+# 数据目录（不排除，需要复制）
+# backend/data 保留，会被复制到镜像
 
 # 开发文件
 .git/
