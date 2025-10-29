@@ -7,6 +7,7 @@ import threading
 import time
 from datetime import datetime
 import traceback
+import uuid
 
 
 class ServerMonitor:
@@ -34,6 +35,16 @@ class ServerMonitor:
         # 价格缓存：key = f"{plan_code}|{sorted_options}"，value = {"price": str, "timestamp": float}
         self.price_cache = {}
         self.price_cache_ttl = 3 * 24 * 3600  # 缓存有效期：3天（秒）
+        
+        # Options 缓存：key = f"{plan_code}|{datacenter}"，value = {"options": list, "timestamp": float}
+        # 用于在 Telegram callback_data 中 options 丢失时恢复（旧机制，保留兼容性）
+        self.options_cache = {}
+        self.options_cache_ttl = 24 * 3600  # 缓存有效期：24小时（秒）
+        
+        # UUID 消息缓存：key = UUID字符串，value = {"planCode": str, "datacenter": str, "options": list, "timestamp": float}
+        # 用于通过UUID恢复完整的下单配置信息
+        self.message_uuid_cache = {}
+        self.message_uuid_cache_ttl = 24 * 3600  # 缓存有效期：24小时（秒）
         
         self.add_log("INFO", "服务器监控器初始化完成", "monitor")
     
@@ -372,9 +383,9 @@ class ServerMonitor:
             else:
                 # 首次检查有货时发送通知
                 self.add_log("INFO", f"首次检查: {plan_code}@{dc}{config_desc} 有货（状态: {status}），发送通知", "monitor")
-                if subscription.get("notifyAvailable", True):
-                    status_changed = True
-                    change_type = "available"
+            if subscription.get("notifyAvailable", True):
+                status_changed = True
+                change_type = "available"
         # 从无货变有货
         elif old_status == "unavailable" and status != "unavailable":
             if subscription.get("notifyAvailable", True):
@@ -504,69 +515,33 @@ class ServerMonitor:
                 }
                 button_text = dc_display_map.get(dc.lower(), dc.upper())
                 
-                # 构建回调数据：planCode|datacenter|options(JSON编码)
+                # 提取配置信息
                 options = config_info.get("options", []) if config_info else []
-                # 使用短字段名以节省空间：a=action, p=planCode, d=datacenter, o=options
+                
+                # 为每个按钮生成UUID并存储完整配置信息（UUID机制）
+                message_uuid = str(uuid.uuid4())
+                self.message_uuid_cache[message_uuid] = {
+                    "planCode": plan_code,
+                    "datacenter": dc,
+                    "options": options,
+                    "configInfo": config_info,  # 保存完整的config_info以便将来扩展
+                    "timestamp": time.time()
+                }
+                self.add_log("DEBUG", f"生成消息UUID: {message_uuid}, 配置: {plan_code}@{dc}, options={options}", "monitor")
+                
+                # callback_data 只包含UUID（使用短格式：u=uuid）
+                # 格式：{"a":"add_to_queue","u":"uuid"}，JSON后约45-50字节，远小于64字节限制
                 callback_data = {
                     "a": "add_to_queue",
-                    "p": plan_code,
-                    "d": dc,
-                    "o": options
+                    "u": message_uuid  # u = uuid
                 }
-                # Telegram callback_data 最大64字节
                 callback_data_str = json.dumps(callback_data, ensure_ascii=False, separators=(',', ':'))
-                callback_data_bytes = callback_data_str.encode('utf-8')
                 
-                # 如果原始JSON超过60字节，使用base64编码（留4字节给"b64:"前缀）
-                if len(callback_data_bytes) > 60:
-                    # 使用base64编码压缩
-                    callback_data_encoded = base64.b64encode(callback_data_bytes).decode('utf-8')
-                    # 确保 "b64:" + encoded 不超过64字节
-                    max_encoded_len = 64 - 4  # 64 - len("b64:")
-                    if len(callback_data_encoded) > max_encoded_len:
-                        # 如果base64编码后仍然太长，尝试先去掉options（如果存在）
-                        if len(options) > 0:
-                            callback_data_without_options = {
-                                "a": "add_to_queue",
-                                "p": plan_code,
-                                "d": dc
-                                # 暂时去掉options，减少数据大小
-                            }
-                            callback_data_str = json.dumps(callback_data_without_options, ensure_ascii=False, separators=(',', ':'))
-                            callback_data_bytes = callback_data_str.encode('utf-8')
-                            callback_data_encoded = base64.b64encode(callback_data_bytes).decode('utf-8')
-                            
-                            if len(callback_data_encoded) > max_encoded_len:
-                                # 如果还是太长，去掉datacenter（可以从按钮文本推断）
-                                callback_data_minimal = {
-                                    "a": "add_to_queue",
-                                    "p": plan_code
-                                    # datacenter可以从按钮文本中提取（按钮包含dc信息）
-                                }
-                                callback_data_str = json.dumps(callback_data_minimal, ensure_ascii=False, separators=(',', ':'))
-                                callback_data_bytes = callback_data_str.encode('utf-8')
-                                callback_data_encoded = base64.b64encode(callback_data_bytes).decode('utf-8')
-                                
-                                if len(callback_data_encoded) > max_encoded_len:
-                                    # 最后手段：直接使用原始JSON截断（不推荐，但总比失败好）
-                                    callback_data_final = callback_data_str[:64]
-                                    self.add_log("WARNING", f"callback_data过大，已截断，options和datacenter可能丢失: {plan_code}", "monitor")
-                                else:
-                                    callback_data_final = "b64:" + callback_data_encoded
-                                    self.add_log("WARNING", f"callback_data过大，已去掉options和datacenter: {plan_code}, options={options}", "monitor")
-                            else:
-                                callback_data_final = "b64:" + callback_data_encoded
-                                self.add_log("WARNING", f"callback_data过大，已去掉options: {plan_code}, options={options}", "monitor")
-                        else:
-                            # 如果没有options，还是太长，可能planCode或datacenter太长
-                            callback_data_encoded = callback_data_encoded[:max_encoded_len]
-                            callback_data_final = "b64:" + callback_data_encoded
-                            self.add_log("WARNING", f"callback_data仍然过大，已截断base64编码: {plan_code}", "monitor")
-                    else:
-                        callback_data_final = "b64:" + callback_data_encoded
-                else:
-                    # 原始JSON小于等于60字节，直接使用
-                    callback_data_final = callback_data_str[:64]
+                # UUID机制下，callback_data通常只有40-50字节，远小于64字节限制
+                if len(callback_data_str) > 64:
+                    self.add_log("WARNING", f"UUID callback_data异常长: {len(callback_data_str)}字节, UUID={message_uuid}", "monitor")
+                
+                callback_data_final = callback_data_str[:64]  # 安全限制，但通常不会截断
                 
                 row.append({
                     "text": button_text,
