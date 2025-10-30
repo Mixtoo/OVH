@@ -252,18 +252,17 @@ const HistoryPage = () => {
           </div>
         ) : (
           /* 桌面端：表格布局 */
-          <div className="overflow-x-auto">
+          <div>
             <table className="w-full">
-              <thead>
-                <tr className="bg-cyber-grid/30 text-cyber-muted text-left text-sm">
-                  <th className="p-4 text-left">服务器</th>
-                  <th className="p-4 text-left">数据中心</th>
-                  <th className="p-4 text-left">配置选项</th>
-                  <th className="p-4 text-left">价格</th>
-                  <th className="p-4 text-left">状态</th>
-                  <th className="p-4 text-left">订单 ID</th>
-                  <th className="p-4 text-left">购买时间</th>
-                  <th className="p-4 text-left">操作</th>
+              <thead className="sticky top-0 bg-slate-900/95 backdrop-blur-sm z-10">
+                <tr className="bg-cyber-grid/30 text-cyber-muted text-left text-xs">
+                  <th className="px-3 py-2.5 text-left">服务器型号</th>
+                  <th className="px-3 py-2.5 text-left">机房</th>
+                  <th className="px-3 py-2.5 text-left">配置选项</th>
+                  <th className="px-3 py-2.5 text-left">价格</th>
+                  <th className="px-3 py-2.5 text-left">状态</th>
+                  <th className="px-3 py-2.5 text-left">购买时间</th>
+                  <th className="px-3 py-2.5 text-left">操作</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-cyber-grid/20">
@@ -272,24 +271,30 @@ const HistoryPage = () => {
                     key={item.id}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    className="hover:bg-cyber-grid/10 transition-colors align-top"
+                    className="hover:bg-cyber-grid/10 transition-colors"
                   >
-                    <td className="p-4 font-medium text-cyber-accent whitespace-nowrap">{item.planCode}</td>
-                    <td className="p-4 text-cyber-text-dimmed whitespace-nowrap">{item.datacenter.toUpperCase()}</td>
-                    <td className="p-4 text-xs text-cyber-text-dimmed min-w-[200px] max-w-xs" title={item.options && item.options.length > 0 ? item.options.join(', ') : '默认配置'}>
-                      {item.options && item.options.length > 0 
-                        ? <span className="whitespace-normal break-words">{item.options.join(', ')}</span>
-                        : '默认配置'}
+                    <td className="px-3 py-2.5 font-medium text-cyber-accent text-xs">
+                      <div className="max-w-[120px] truncate" title={item.planCode}>
+                        {item.planCode}
+                      </div>
                     </td>
-                    <td className="p-4 whitespace-nowrap">
+                    <td className="px-3 py-2.5 text-cyber-text-dimmed text-xs whitespace-nowrap">{item.datacenter.toUpperCase()}</td>
+                    <td className="px-3 py-2.5 text-xs text-cyber-text-dimmed max-w-[200px]">
+                      <div className="break-words line-clamp-2" title={item.options && item.options.length > 0 ? item.options.join(', ') : '默认配置'}>
+                        {item.options && item.options.length > 0 
+                          ? item.options.join(', ')
+                          : '默认配置'}
+                      </div>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs whitespace-nowrap">
                       {item.price && item.price.withTax !== undefined ? (
                         <div>
                           <div className="font-medium text-green-400">
                             {item.price.withTax} {item.price.currencyCode || 'EUR'}
                           </div>
                           {item.price.withoutTax !== undefined && item.price.withoutTax !== item.price.withTax && (
-                            <div className="text-xs text-cyber-text-dimmed">
-                              不含税: {item.price.withoutTax} {item.price.currencyCode || 'EUR'}
+                            <div className="text-[10px] text-cyber-text-dimmed">
+                              (含税 {item.price.tax})
                             </div>
                           )}
                         </div>
@@ -297,8 +302,8 @@ const HistoryPage = () => {
                         <span className="text-cyber-text-dimmed">-</span>
                       )}
                     </td>
-                    <td className="p-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
+                    <td className="px-3 py-2.5 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-medium ${
                         item.status === "success" 
                           ? "bg-green-500/20 text-green-400" 
                           : "bg-red-500/20 text-red-400"
@@ -306,31 +311,41 @@ const HistoryPage = () => {
                         {item.status === "success" ? "成功" : "失败"}
                       </span>
                     </td>
-                    <td className="p-4 text-cyber-text-dimmed whitespace-nowrap">
-                      {item.orderId || "-"}
+                    <td className="px-3 py-2.5 text-cyber-text-dimmed text-xs">
+                      <div className="max-w-[140px] truncate" title={new Date(item.purchaseTime).toLocaleString()}>
+                        {new Date(item.purchaseTime).toLocaleString('zh-CN', {
+                          month: '2-digit',
+                          day: '2-digit',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          hour12: false
+                        }).replace(/\//g, '-')}
+                      </div>
                     </td>
-                    <td className="p-4 text-cyber-text-dimmed whitespace-nowrap">
-                      {new Date(item.purchaseTime).toLocaleString()}
-                    </td>
-                    <td className="p-4 whitespace-nowrap">
+                    <td className="px-3 py-2.5 whitespace-nowrap">
                       {item.status === "success" && item.orderUrl ? (
                         <a 
                           href={item.orderUrl} 
                           target="_blank" 
                           rel="noopener noreferrer"
-                          className="text-cyber-accent hover:text-cyber-accent/80 transition-colors text-sm"
+                          className="text-cyber-accent hover:text-cyber-accent/80 transition-colors text-xs"
                         >
-                          查看订单
+                          订单
                         </a>
                       ) : item.status === "failed" && item.errorMessage ? (
                         <button
                           onClick={() => toast.info(item.errorMessage)}
-                          className="text-red-400 hover:text-red-400/80 transition-colors text-sm"
+                          className="text-red-400 hover:text-red-400/80 transition-colors text-xs"
                         >
-                          查看错误
+                          错误
                         </button>
                       ) : (
                         "-"
+                      )}
+                      {item.orderId && (
+                        <div className="text-[10px] text-cyber-text-dimmed mt-0.5 max-w-[100px] truncate" title={item.orderId}>
+                          {item.orderId}
+                        </div>
                       )}
                     </td>
                   </motion.tr>

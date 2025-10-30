@@ -93,7 +93,9 @@ stats = {
     "totalServers": 0,
     "availableServers": 0,
     "purchaseSuccess": 0,
-    "purchaseFailed": 0
+    "purchaseFailed": 0,
+    "queueProcessorRunning": True,  # 队列处理器状态（守护线程，始终运行）
+    "monitorRunning": False  # 监控器运行状态
 }
 
 # 服务器列表缓存
@@ -355,7 +357,7 @@ def flush_logs():
 
 # Update statistics
 def update_stats():
-    global stats
+    global stats, monitor
     # 活跃队列 = 所有未完成的队列项（running + pending），不包括已完成或失败的
     active_count = sum(1 for item in queue if item["status"] in ["running", "pending", "paused"])
     available_count = 0
@@ -370,12 +372,19 @@ def update_stats():
     success_count = sum(1 for item in purchase_history if item["status"] == "success")
     failed_count = sum(1 for item in purchase_history if item["status"] == "failed")
     
+    # 检查监控器运行状态
+    monitor_running = False
+    if monitor:
+        monitor_running = monitor.running
+    
     stats = {
         "activeQueues": active_count,
         "totalServers": len(server_plans),
         "availableServers": available_count,
         "purchaseSuccess": success_count,
-        "purchaseFailed": failed_count
+        "purchaseFailed": failed_count,
+        "queueProcessorRunning": True,  # 队列处理器作为守护线程始终运行
+        "monitorRunning": monitor_running  # 监控器实际运行状态
     }
 
 # Helper: 根据endpoint配置获取API基础URL
@@ -3092,16 +3101,30 @@ def get_servers():
     
     return response
 
-@app.route('/api/availability/<plan_code>', methods=['GET'])
+@app.route('/api/availability/<path:plan_code>', methods=['GET', 'POST', 'OPTIONS'])
 def get_availability(plan_code):
-    # 获取配置选项参数（逗号分隔的字符串）
-    options_str = request.args.get('options', '')
-    options = [opt.strip() for opt in options_str.split(',') if opt.strip()] if options_str else []
+    if request.method == 'OPTIONS':
+        return jsonify({}), 200
+    
+    # 支持GET（URL参数）和POST（请求体）两种方式
+    if request.method == 'POST':
+        data = request.json or {}
+        options = data.get('options', [])
+        if isinstance(options, str):
+            # 如果是字符串，分割为列表
+            options = [opt.strip() for opt in options.split(',') if opt.strip()]
+    else:
+        # GET请求：获取配置选项参数（逗号分隔的字符串）
+        options_str = request.args.get('options', '')
+        options = [opt.strip() for opt in options_str.split(',') if opt.strip()] if options_str else []
+    
+    add_log("DEBUG", f"查询可用性: plan_code={plan_code}, method={request.method}, options数量={len(options)}", "availability")
     
     availability = check_server_availability(plan_code, options)
     if availability:
         return jsonify(availability)
     else:
+        add_log("WARNING", f"未找到 {plan_code} 的可用性数据", "availability")
         return jsonify({}), 404
 
 def _convert_display_dc_to_api_dc(datacenter):

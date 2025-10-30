@@ -659,16 +659,11 @@ const ServersPage = () => {
       // 获取用户选择的配置选项
       const selectedOpts = selectedOptions[planCode] || [];
       
-      // 直接使用完整的planCode查询（包括数据中心后缀）
-      // 如果用户选择了自定义配置，传递这些选项
-      const params: any = {};
-      if (selectedOpts.length > 0) {
-        // 将选项数组转换为逗号分隔的字符串
-        params.options = selectedOpts.join(',');
-      }
-      
-      const response = await api.get(`/availability/${planCode}`, { 
-        params,
+      // 使用POST方法避免URL参数过长导致截断
+      // 直接将选项数组放在请求体中，避免URL长度限制
+      const response = await api.post(`/availability/${planCode}`, { 
+        options: selectedOpts
+      }, {
         timeout: 120000 // 2分钟超时
       });
       console.log(`获取到 ${planCode} 的可用性数据 (配置: ${selectedOpts.join(', ') || '默认'}):`, response.data);

@@ -11,6 +11,8 @@ interface StatsType {
   availableServers: number;
   purchaseSuccess: number;
   purchaseFailed: number;
+  queueProcessorRunning?: boolean;
+  monitorRunning?: boolean;
 }
 
 interface QueueItem {
@@ -31,6 +33,8 @@ const Dashboard = () => {
     availableServers: 0,
     purchaseSuccess: 0,
     purchaseFailed: 0,
+    queueProcessorRunning: true,
+    monitorRunning: false,
   });
   const [queueItems, setQueueItems] = useState<QueueItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -251,44 +255,60 @@ const Dashboard = () => {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-16 bg-cyber-grid/50 animate-pulse rounded"></div>
+                <div key={i} className="h-20 bg-cyber-grid/50 animate-pulse rounded-lg"></div>
               ))}
             </div>
           ) : stats.activeQueues === 0 ? (
-            <div className="cyber-panel bg-cyber-grid/30 p-4 text-center text-cyber-muted">
-              <p>没有活跃队列</p>
+            <div className="bg-cyber-grid/10 p-8 rounded-lg text-center border border-cyber-grid/30">
+              <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyber-muted/50 mx-auto mb-4">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg>
+              <p className="text-cyber-muted text-base mb-4">暂无活跃任务</p>
               <Link 
                 to="/queue" 
-                className="mt-2 cyber-button text-xs inline-block px-3 py-1"
+                className="cyber-button text-sm inline-flex items-center px-5 py-2.5 gap-2"
               >
-                创建队列
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="12" y1="5" x2="12" y2="19"></line>
+                  <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                创建抢购任务
               </Link>
             </div>
           ) : (
             <div className="space-y-3">
               {queueItems.map((item) => (
-                <div key={item.id} className="cyber-panel p-3 bg-cyber-grid/30 flex justify-between items-center">
-                  <div className="flex-1">
-                    <p className="font-medium">{item.planCode}</p>
-                    <div className="flex items-center gap-2 text-xs text-cyber-muted mt-1">
-                      <span>DC: {item.datacenter.toUpperCase()}</span>
-                      <span>•</span>
-                      <span>第{item.retryCount + 1}次尝试</span>
+                <div key={item.id} className="p-4 bg-cyber-grid/10 rounded-lg border border-cyber-accent/20 hover:border-cyber-accent/40 hover:bg-cyber-grid/15 transition-all duration-200 flex justify-between items-center group">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-base text-cyber-accent truncate group-hover:text-cyber-neon transition-colors">{item.planCode}</p>
+                    <div className="flex items-center gap-3 text-sm text-cyber-muted mt-1.5">
+                      <span className="flex items-center gap-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyber-accent/60">
+                          <circle cx="12" cy="12" r="10"></circle>
+                          <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        {item.datacenter.toUpperCase()}
+                      </span>
+                      <span className="text-cyber-grid">•</span>
+                      <span>第 {item.retryCount + 1} 次尝试</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-xs px-2 py-1 rounded-full flex items-center ${
-                      item.status === 'running' ? 'bg-green-500/20 text-green-400' :
-                      item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400' :
-                      'bg-gray-500/20 text-gray-400'
+                  <div className="flex items-center gap-2 flex-shrink-0 ml-4">
+                    <span className={`text-sm px-3 py-1.5 rounded-lg flex items-center font-medium ${
+                      item.status === 'running' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                      item.status === 'pending' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                      'bg-gray-500/20 text-gray-400 border border-gray-500/30'
                     }`}>
-                      <span className={`w-1.5 h-1.5 mr-1 rounded-full ${
+                      <span className={`w-2 h-2 mr-2 rounded-full ${
                         item.status === 'running' ? 'bg-green-400 animate-pulse' :
                         item.status === 'pending' ? 'bg-yellow-400' :
                         'bg-gray-400'
                       }`}></span>
                       {item.status === 'running' ? '运行中' :
-                       item.status === 'pending' ? '待命中' : '暂停'}
+                       item.status === 'pending' ? '等待中' : '已暂停'}
                     </span>
                   </div>
                 </div>
@@ -297,39 +317,39 @@ const Dashboard = () => {
           )}
         </motion.div>
 
-        {/* API 状态 */}
+        {/* 系统状态 */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6, duration: 0.3 }}
           className="cyber-card"
         >
-          <h2 className="text-lg font-bold mb-4">系统状态</h2>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center p-2 border-b border-cyber-grid">
-              <span className="text-cyber-muted">API 连接</span>
-              <span className={`flex items-center ${isAuthenticated ? 'text-green-400' : 'text-red-400'}`}>
-                <span className={`w-2 h-2 rounded-full mr-2 ${isAuthenticated ? 'bg-green-400 animate-pulse' : 'bg-red-400'}`}></span>
+          <h2 className="text-lg font-bold mb-5">系统状态</h2>
+          <div className="space-y-4">
+            <div className="flex justify-between items-center p-3 rounded-lg bg-cyber-grid/5 hover:bg-cyber-grid/10 transition-colors">
+              <span className="text-cyber-text text-sm font-medium">API 连接</span>
+              <span className={`flex items-center text-sm font-semibold ${isAuthenticated ? 'text-green-400' : 'text-red-400'}`}>
+                <span className={`w-2.5 h-2.5 rounded-full mr-2 ${isAuthenticated ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-red-400'}`}></span>
                 {isAuthenticated ? '已连接' : '未连接'}
               </span>
             </div>
-            <div className="flex justify-between items-center p-2 border-b border-cyber-grid">
-              <span className="text-cyber-muted">后端服务</span>
-              <span className="flex items-center text-green-400">
-                <span className="w-2 h-2 rounded-full mr-2 bg-green-400 animate-pulse"></span>
-                运行中
+            <div className="flex justify-between items-center p-3 rounded-lg bg-cyber-grid/5 hover:bg-cyber-grid/10 transition-colors">
+              <span className="text-cyber-text text-sm font-medium">自动抢购</span>
+              <span className={`flex items-center text-sm font-semibold ${stats.activeQueues > 0 ? 'text-green-400' : 'text-cyber-muted'}`}>
+                <span className={`w-2.5 h-2.5 rounded-full mr-2 ${stats.activeQueues > 0 ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-cyber-muted'}`}></span>
+                {stats.activeQueues > 0 ? '运行中' : '暂无任务'}
               </span>
             </div>
-            <div className="flex justify-between items-center p-2 border-b border-cyber-grid">
-              <span className="text-cyber-muted">自动抢购</span>
-              <span className="flex items-center text-green-400">
-                <span className="w-2 h-2 rounded-full mr-2 bg-green-400 animate-pulse"></span>
-                已启用
+            <div className="flex justify-between items-center p-3 rounded-lg bg-cyber-grid/5 hover:bg-cyber-grid/10 transition-colors">
+              <span className="text-cyber-text text-sm font-medium">服务器监控</span>
+              <span className={`flex items-center text-sm font-semibold ${stats.monitorRunning ? 'text-green-400' : 'text-cyber-muted'}`}>
+                <span className={`w-2.5 h-2.5 rounded-full mr-2 ${stats.monitorRunning ? 'bg-green-400 animate-pulse shadow-lg shadow-green-400/50' : 'bg-cyber-muted'}`}></span>
+                {stats.monitorRunning ? '运行中' : '待启用'}
               </span>
             </div>
-            <div className="flex justify-between items-center p-2">
-              <span className="text-cyber-muted">版本</span>
-              <span className="text-cyber-text">v1.0.0</span>
+            <div className="flex justify-between items-center p-3 rounded-lg bg-cyber-grid/5 mt-4 border-t border-cyber-grid/30 pt-4">
+              <span className="text-cyber-muted text-sm">系统版本</span>
+              <span className="text-cyber-text text-sm font-mono font-semibold">v2.0.0</span>
             </div>
           </div>
         </motion.div>
