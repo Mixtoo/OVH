@@ -44,7 +44,7 @@ const MonitorPage = () => {
     running: false,
     subscriptions_count: 0,
     known_servers_count: 0,
-    check_interval: 60
+    check_interval: 5
   });
   const [isLoading, setIsLoading] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);

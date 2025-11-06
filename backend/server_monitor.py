@@ -29,7 +29,7 @@ class ServerMonitor:
         self.subscriptions = []  # 订阅列表
         self.known_servers = set()  # 已知服务器集合
         self.running = False  # 运行状态
-        self.check_interval = 60  # 检查间隔（秒），默认60秒
+        self.check_interval = 5  # 检查间隔（秒），默认5秒
         self.thread = None
         
         # 价格缓存：key = f"{plan_code}|{sorted_options}"，value = {"price": str, "timestamp": float}
@@ -979,8 +979,8 @@ class ServerMonitor:
     
     def set_check_interval(self, interval):
         """设置检查间隔（秒）"""
-        if interval < 60:
-            self.add_log("WARNING", "检查间隔不能小于60秒", "monitor")
+        if interval < 5:
+            self.add_log("WARNING", "检查间隔不能小于5秒", "monitor")
             return False
         
         self.check_interval = interval

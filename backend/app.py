@@ -2615,7 +2615,7 @@ def set_monitor_interval():
         save_subscriptions()
         return jsonify({"status": "success", "message": f"检查间隔已设置为 {interval} 秒"})
     else:
-        return jsonify({"status": "error", "message": "设置失败，间隔不能小于60秒"}), 400
+        return jsonify({"status": "error", "message": "设置失败，间隔不能小于5秒"}), 400
 @app.route('/api/telegram/set-webhook', methods=['POST'])
 def set_telegram_webhook():
     """
@@ -8228,10 +8228,10 @@ if __name__ == '__main__':
     # Load data first (会加载订阅数据)
     load_data()
     
-    # 确保使用新的默认值60秒（如果配置文件中没有保存check_interval）
-    if monitor.check_interval == 300:
-        print("检测到旧的检查间隔300秒，更新为60秒")
-        monitor.check_interval = 60
+    # 确保使用新的默认值5秒（如果配置文件中没有保存check_interval）
+    if monitor.check_interval == 300 or monitor.check_interval == 60:
+        print(f"检测到旧的检查间隔{monitor.check_interval}秒，更新为5秒")
+        monitor.check_interval = 5
         save_subscriptions()
     
     # 只在主进程启动后台线程（避免Flask reloader重复启动）
