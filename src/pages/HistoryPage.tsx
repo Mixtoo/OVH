@@ -357,7 +357,11 @@ const HistoryPage = () => {
       
       {/* 确认清空对话框 */}
       {showClearConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50" onClick={() => setShowClearConfirm(false)}>
+        <div 
+          className="fixed top-0 left-0 right-0 bottom-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[9999]" 
+          style={{ position: 'fixed', margin: 0 }}
+          onClick={() => setShowClearConfirm(false)}
+        >
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
