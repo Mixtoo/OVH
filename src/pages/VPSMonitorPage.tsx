@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { api } from '@/utils/apiClient';
 import { toast } from 'sonner';
@@ -45,9 +45,12 @@ const VPSMonitorPage = () => {
     check_interval: 60
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [expandedHistory, setExpandedHistory] = useState<string | null>(null);
   const [historyData, setHistoryData] = useState<Record<string, HistoryEntry[]>>({});
+  const prevSubscriptionsRef = useRef<VPSSubscription[]>([]);
+  const loadingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   
   // VPS型号选项
   const vpsModels = [
@@ -69,13 +72,38 @@ const VPSMonitorPage = () => {
   });
 
   // 加载订阅列表
-  const loadSubscriptions = async () => {
+  const loadSubscriptions = async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      // 延迟显示加载状态，避免快速加载时的闪烁
+      loadingTimeoutRef.current = setTimeout(() => {
+        setIsLoading(true);
+      }, 150);
+    }
     try {
       const response = await api.get('/vps-monitor/subscriptions');
-      setSubscriptions(response.data);
+      const newData = response.data;
+      setSubscriptions(newData);
+      prevSubscriptionsRef.current = newData;
+      // 如果数据加载完成，清除延迟显示的加载状态
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      setIsLoading(false);
     } catch (error) {
       console.error('加载VPS订阅失败:', error);
-      toast.error('加载VPS订阅失败');
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+        loadingTimeoutRef.current = null;
+      }
+      if (!isRefresh) {
+        toast.error('加载VPS订阅失败');
+      }
+      setIsLoading(false);
+    } finally {
+      setIsRefreshing(false);
     }
   };
 
@@ -122,7 +150,7 @@ const VPSMonitorPage = () => {
         notifyUnavailable: false
       });
       setShowAddForm(false);
-      loadSubscriptions();
+      loadSubscriptions(true);
       loadMonitorStatus();
     } catch (error: any) {
       const errorMsg = error.response?.data?.message || '订阅失败';
@@ -139,7 +167,7 @@ const VPSMonitorPage = () => {
     try {
       await api.delete(`/vps-monitor/subscriptions/${id}`);
       toast.success(`已取消订阅 ${planCode}`);
-      loadSubscriptions();
+      loadSubscriptions(true);
       loadMonitorStatus();
     } catch (error) {
       toast.error('取消订阅失败');
@@ -155,7 +183,7 @@ const VPSMonitorPage = () => {
     try {
       const response = await api.delete('/vps-monitor/subscriptions/clear');
       toast.success(`已清空 ${response.data.count} 个VPS订阅`);
-      loadSubscriptions();
+      loadSubscriptions(true);
       loadMonitorStatus();
     } catch (error) {
       toast.error('清空订阅失败');
@@ -217,7 +245,14 @@ const VPSMonitorPage = () => {
         loadMonitorStatus();
       }, 30000); // 30秒刷新一次
       
-      return () => clearInterval(interval);
+      return () => {
+        clearInterval(interval);
+        // 清理延迟加载的定时器
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current);
+          loadingTimeoutRef.current = null;
+        }
+      };
     }
   }, [isAuthenticated]);
 
@@ -260,13 +295,14 @@ const VPSMonitorPage = () => {
           <div className="flex gap-2">
             <button
               onClick={() => {
-                loadSubscriptions();
+                loadSubscriptions(true);
                 loadMonitorStatus();
               }}
-              className="px-4 py-2 bg-cyber-accent/10 hover:bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30 rounded-md transition-all flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow-md"
+              disabled={isRefreshing}
+              className="px-4 py-2 bg-cyber-accent/10 hover:bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30 rounded-md transition-all flex items-center gap-2 text-sm font-medium shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <RefreshCw size={16} />
-              刷新
+              <RefreshCw size={16} className={isRefreshing ? 'animate-spin' : ''} />
+              {isRefreshing ? '刷新中...' : '刷新'}
             </button>
             <button
               onClick={toggleMonitor}
@@ -422,15 +458,25 @@ const VPSMonitorPage = () => {
         )}
 
         {/* 订阅列表 */}
-        {subscriptions.length === 0 ? (
-          <div className="text-center text-cyber-muted py-12">
-            <Server size={48} className="mx-auto mb-4 opacity-30" />
-            <p>暂无VPS订阅</p>
-            <p className="text-sm mt-2">点击"添加订阅"按钮，选择VPS型号开始监控</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {subscriptions.map((sub) => (
+        {(() => {
+          // 在加载期间，如果有之前的数据，显示之前的数据；否则显示当前数据
+          const displaySubscriptions = (isLoading && prevSubscriptionsRef.current.length > 0) 
+            ? prevSubscriptionsRef.current 
+            : subscriptions;
+          
+          if (displaySubscriptions.length === 0) {
+            return (
+              <div className="text-center text-cyber-muted py-12">
+                <Server size={48} className="mx-auto mb-4 opacity-30" />
+                <p>暂无VPS订阅</p>
+                <p className="text-sm mt-2">点击"添加订阅"按钮，选择VPS型号开始监控</p>
+              </div>
+            );
+          }
+          
+          return (
+            <div className="space-y-3">
+              {displaySubscriptions.map((sub) => (
               <motion.div
                 key={sub.id}
                 initial={{ opacity: 0, y: 10 }}
@@ -546,9 +592,10 @@ const VPSMonitorPage = () => {
                   </motion.div>
                 )}
               </motion.div>
-            ))}
-          </div>
-        )}
+              ))}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

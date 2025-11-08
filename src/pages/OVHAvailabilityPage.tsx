@@ -557,22 +557,7 @@ const OVHAvailabilityPage = () => {
       )}
 
       {/* 数据列表 */}
-      {/* 只在首次加载时显示加载状态，刷新时保留列表 */}
-      {isLoading && availabilities.length === 0 && prevAvailabilitiesRef.current.length === 0 ? (
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="animate-spin w-10 h-10 border-4 border-cyber-accent border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-cyber-muted">正在获取 OVH 实时数据...</p>
-          </div>
-        </div>
-      ) : (availabilities.length === 0 && prevAvailabilitiesRef.current.length === 0) && !isRefreshing && !isLoading ? (
-        // 只有在确实没有任何数据（包括ref中的）且不在刷新、不在加载时才显示"暂无数据"
-        <div className="cyber-panel p-8 text-center">
-          <Database className="w-16 h-16 text-cyber-muted mx-auto mb-4 opacity-50" />
-          <p className="text-cyber-muted mb-4">暂无数据</p>
-          <p className="text-sm text-slate-500">点击"刷新数据"按钮获取 OVH 最新库存信息</p>
-        </div>
-      ) : filteredData.length === 0 && availabilities.length > 0 ? (
+      {filteredData.length === 0 && availabilities.length > 0 ? (
         // 有数据但过滤后为空，显示"没有匹配的结果"
         <div className="cyber-panel p-8 text-center">
           <Filter className="w-16 h-16 text-cyber-muted mx-auto mb-4 opacity-50" />

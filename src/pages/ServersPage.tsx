@@ -1653,12 +1653,12 @@ const ServersPage = () => {
         {/* 显示已选配置的摘要 */}
         {selectedOptions[server.planCode]?.length > 0 && 
          !selectedOptions[server.planCode].every(opt => server.defaultOptions.map(o => o.value).includes(opt)) && (
-          <div className="mt-1.5 p-1.5 bg-cyber-accent/10 border border-cyber-accent/30 rounded-md">
-            <div className="text-[9px] font-medium text-cyber-accent mb-0.5 flex items-center">
+          <div className="mt-2 p-2.5 sm:p-3 bg-cyber-accent/10 border border-cyber-accent/30 rounded-md">
+            <div className="text-[10px] font-medium text-cyber-accent mb-1.5 flex items-center">
               <CheckSquare size={10} className="mr-0.5" />
               已选自定义配置
             </div>
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5">
               {selectedOptions[server.planCode].map(optValue => {
                 const option = server.availableOptions.find(o => o.value === optValue);
                 if (!option || server.defaultOptions.map(o => o.value).includes(optValue)) return null;
@@ -1906,8 +1906,8 @@ const ServersPage = () => {
             >
               <Card className="border-cyber-accent/30 overflow-hidden w-full">
                 {/* Header with server code and name */}
-                <CardHeader className="px-2 sm:px-2.5 py-1.5 bg-cyber-grid/20 border-b border-cyber-accent/20">
-                  <div className="flex justify-between items-center gap-2 min-w-0">
+                <CardHeader className="px-4 sm:px-5 py-2.5 bg-cyber-grid/20 border-b border-cyber-accent/20">
+                  <div className="flex justify-between items-center gap-4 min-w-0">
                     <CardTitle className="text-xs sm:text-sm font-semibold truncate flex-shrink-0 max-w-[40%]">{server.planCode}</CardTitle>
                     <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink min-w-0">
                       <div className="bg-cyber-accent/10 px-1 py-0.5 rounded text-[9px] border border-cyber-accent/20 text-cyber-accent truncate max-w-[120px]">
@@ -1924,7 +1924,7 @@ const ServersPage = () => {
                   {/* 价格通过通知形式显示，不在页面直接显示 */}
                 </CardHeader>
                 
-                <CardContent className="p-2">
+                <CardContent className="p-4 sm:p-5">
                   {/* Server specs in a grid */}
                   <div className="grid grid-cols-2 gap-1.5 mb-2">
                     <div className="flex items-center space-x-1.5 p-1 bg-cyber-grid/10 rounded border border-cyber-accent/10">
@@ -1970,11 +1970,11 @@ const ServersPage = () => {
                   {renderServerOptions(server)}
                   
                   {/* Datacenters availability section - REINSTATED */}
-                  <div className="mt-2 rounded-md overflow-hidden border border-cyber-accent/30 w-full">
-                    <div className="bg-cyber-grid/30 px-2 py-1.5 border-b border-cyber-accent/30">
-                      <div className="flex items-center justify-between gap-2 w-full">
-                        <span className="text-[9px] sm:text-[10px] font-medium flex items-center flex-shrink-0">
-                          <svg xmlns="http://www.w3.org/2000/svg" width={isMobile ? 12 : 14} height={isMobile ? 12 : 14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyber-accent mr-1 flex-shrink-0">
+                  <div className="mt-3 rounded-md overflow-hidden border border-cyber-accent/30 w-full">
+                    <div className="bg-cyber-grid/30 px-4 py-2.5 border-b border-cyber-accent/30">
+                      <div className="flex items-center justify-between gap-4 w-full">
+                        <span className="text-[10px] sm:text-[11px] font-medium flex items-center flex-shrink-0">
+                          <svg xmlns="http://www.w3.org/2000/svg" width={isMobile ? 12 : 14} height={isMobile ? 12 : 14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-cyber-accent mr-1.5 flex-shrink-0">
                             <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
                             <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
                             <line x1="6" y1="6" x2="6.01" y2="6"></line>
@@ -1983,11 +1983,11 @@ const ServersPage = () => {
                           <span className="hidden sm:inline whitespace-nowrap">数据中心选择</span>
                           <span className="sm:hidden whitespace-nowrap">机房</span>
                         </span>
-                        <div className="flex gap-1 items-center flex-shrink-0">
+                        <div className="flex gap-2 items-center flex-shrink-0">
                           <button
                             onClick={() => checkAvailability(server.planCode)}
                             disabled={isCheckingAvailability || !isAuthenticated}
-                            className="px-1.5 py-0.5 bg-cyber-accent/10 hover:bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30 hover:border-cyber-accent/50 rounded text-[9px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-0.5 whitespace-nowrap flex-shrink-0"
+                            className="px-2 py-1 bg-cyber-accent/10 hover:bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30 hover:border-cyber-accent/50 rounded text-[10px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap flex-shrink-0"
                           >
                             {isCheckingAvailability && selectedServer === server.planCode ? (
                               <>
@@ -2014,7 +2014,7 @@ const ServersPage = () => {
                               addToMonitor(server, selectedDcs);
                             }}
                             disabled={!isAuthenticated}
-                            className="px-1.5 py-0.5 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 hover:border-blue-500/60 rounded text-[9px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-0.5 whitespace-nowrap flex-shrink-0"
+                            className="px-2 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/40 hover:border-blue-500/60 rounded text-[10px] font-medium shadow-sm disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1 whitespace-nowrap flex-shrink-0"
                             title="添加到服务器监控"
                           >
                             <Bell size={9} className="flex-shrink-0" />
@@ -2031,7 +2031,7 @@ const ServersPage = () => {
                               }
                             }}
                             disabled={!isAuthenticated || getSelectedDatacentersList(server.planCode).length === 0}
-                            className="relative px-2 py-1 bg-gradient-to-r from-cyber-primary to-cyber-primary-dark text-white border border-cyber-primary/40 rounded text-[9px] font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-0.5 animate-pulse-slow whitespace-nowrap flex-shrink-0"
+                            className="relative px-2.5 py-1 bg-gradient-to-r from-cyber-primary to-cyber-primary-dark text-white border border-cyber-primary/40 rounded text-[10px] font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none flex items-center gap-1 animate-pulse-slow whitespace-nowrap flex-shrink-0"
                             style={{ animationDuration: '2s' }}
                           >
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
@@ -2049,9 +2049,9 @@ const ServersPage = () => {
                       </div>
                     </div>
                     
-                    <div className="p-1.5 bg-cyber-grid/10 border-b border-cyber-accent/20">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[9px] text-cyber-muted flex items-center flex-shrink-0">
+                    <div className="px-4 py-2.5 bg-cyber-grid/10 border-b border-cyber-accent/20">
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-[10px] text-cyber-muted flex items-center flex-shrink-0">
                           <svg xmlns="http://www.w3.org/2000/svg" width={isMobile ? 10 : 11} height={isMobile ? 10 : 11} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 flex-shrink-0">
                             <circle cx="12" cy="12" r="10"></circle>
                             <path d="M12 8v4l3 3"></path>
@@ -2059,15 +2059,15 @@ const ServersPage = () => {
                           <span className="hidden sm:inline">选择部署位置:</span>
                           <span className="sm:hidden">位置:</span>
                         </span>
-                        <div className="flex gap-1">
+                        <div className="flex gap-2">
                           <button
                             onClick={() => toggleAllDatacenters(server.planCode, true)}
-                            className="px-1.5 py-0.5 bg-cyber-accent/10 hover:bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30 hover:border-cyber-accent/50 rounded text-[9px] font-medium transition-all shadow-sm hover:shadow-md whitespace-nowrap">
+                            className="px-2 py-1 bg-cyber-accent/10 hover:bg-cyber-accent/20 text-cyber-accent border border-cyber-accent/30 hover:border-cyber-accent/50 rounded text-[10px] font-medium transition-all shadow-sm hover:shadow-md whitespace-nowrap">
                             全选
                           </button>
                           <button
                             onClick={() => toggleAllDatacenters(server.planCode, false)}
-                            className="px-1.5 py-0.5 bg-cyber-grid/10 hover:bg-cyber-grid/20 text-cyber-muted hover:text-cyber-text border border-cyber-accent/20 hover:border-cyber-accent/40 rounded text-[9px] font-medium transition-all shadow-sm hover:shadow-md whitespace-nowrap">
+                            className="px-2 py-1 bg-cyber-grid/10 hover:bg-cyber-grid/20 text-cyber-muted hover:text-cyber-text border border-cyber-accent/20 hover:border-cyber-accent/40 rounded text-[10px] font-medium transition-all shadow-sm hover:shadow-md whitespace-nowrap">
                             <span className="hidden sm:inline">取消全选</span>
                             <span className="sm:hidden">取消</span>
                           </button>
@@ -2076,7 +2076,7 @@ const ServersPage = () => {
                     </div>
                     
                     {/* 数据中心列表 - 紧凑网格设计 */}
-                    <div className="bg-slate-900/10 p-1.5">
+                    <div className="bg-slate-900/10 p-3 sm:p-4">
                       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-1.5">
                         {OVH_DATACENTERS
                           .filter(dc => {
