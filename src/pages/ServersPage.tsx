@@ -2105,21 +2105,30 @@ const ServersPage = () => {
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-4 gap-2.5">
                               {regionDatacenters.map(dc => {
                                   const dcCode = dc.code.toUpperCase();
-                                  const availStatus = availability[server.planCode]?.[dcCode.toLowerCase()] || "unknown";
+                                  const availStatus = availability[server.planCode]?.[dcCode.toLowerCase()];
                                   const isSelected = selectedDatacenters[server.planCode]?.[dcCode];
                                   
                                   let statusText = "";
                                   let statusBgColor = "bg-yellow-400";
+                                  let statusTextColor = "";
                                   let showStatusText = false;
                                   
+                                  // 只显示"可用"和"不可用"两种状态
                                   if (availStatus === "unavailable") {
                                     statusText = "不可用";
                                     statusBgColor = "bg-red-400";
+                                    statusTextColor = "text-red-400";
                                     showStatusText = true;
-                                  } else if (availStatus && availStatus !== "unknown") {
+                                  } else if (availStatus && availStatus !== "unknown" && availStatus !== "unavailable") {
+                                    // 有具体的可用性数据，显示"可用"
                                     statusText = availStatus.includes("H") ? availStatus : "可用";
                                     statusBgColor = "bg-green-400";
+                                    statusTextColor = "text-green-400/80";
                                     showStatusText = true;
+                                  } else {
+                                    // 未检测或unknown状态，不显示状态文字
+                                    statusBgColor = "bg-yellow-400";
+                                    showStatusText = false;
                                   }
                                   
                                   return (
@@ -2140,11 +2149,13 @@ const ServersPage = () => {
                                       <div className="min-w-0 text-center">
                                         <span className="text-[10px] text-slate-400/90 break-words leading-snug">{dc.name}</span>
                                       </div>
-                                      {showStatusText && (
-                                        <div className="text-center">
-                                          <span className="text-[10px] font-medium whitespace-nowrap">{statusText}</span>
-                                        </div>
-                                      )}
+                                      <div className="text-center h-[14px] flex items-center justify-center">
+                                        {showStatusText ? (
+                                          <span className={`text-[10px] font-medium whitespace-nowrap ${statusTextColor}`}>{statusText}</span>
+                                        ) : (
+                                          <span className="text-[10px] font-medium whitespace-nowrap opacity-0">占位</span>
+                                        )}
+                                      </div>
                                     </div>
                                   );
                                 })}
